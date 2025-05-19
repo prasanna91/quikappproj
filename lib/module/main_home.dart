@@ -416,6 +416,7 @@ class _MainHomeState extends State<MainHome> {
       'aboutus': Icons.business,
       'more': Icons.more_horiz,
       'menu': Icons.more_horiz,
+      'services': Icons.design_services, // Added missing service icon
     };
 
     final icon = iconMap[lowerName];
