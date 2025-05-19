@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -321,47 +322,44 @@ class _MainHomeState extends State<MainHome> {
   bool isLoading = true;
   bool hasError = false;
 
-  Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
-    return FutureBuilder(
-      future: Future.delayed(Duration.zero), // Ensures async build
-      builder: (context, snapshot) {
-        final icon = Icon(
-          _getIconByName(item['icon']),
-          color: isActive ? _parseHexColor(widget.activeTabColor) : _parseHexColor(widget.iconColor),
-        );
-        final label = Text(item['label'], style: _getMenuTextStyle(isActive));
-
-        switch (widget.iconPosition) {
-          case 'above':
-            return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
-          case 'beside':
-            return Row(mainAxisSize: MainAxisSize.min, children: [icon, SizedBox(width: 4), label]);
-          case 'only_text':
-            return label;
-          case 'only_icon':
-            return icon;
-          default:
-            return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
-        }
-      },
-    );
-  }
-
   TextStyle _getMenuTextStyle(bool isActive) {
-    return TextStyle(
+    // Get the font family from your config or default to 'Open Sans'
+    final String fontFamily = widget.bottomMenuItems.first[bmfont] ?? 'Open Sans';
+
+    // Use GoogleFonts.getFont for dynamic font family
+    return GoogleFonts.getFont(
+      fontFamily,
       fontSize: double.tryParse(widget.bottomMenuItems.first[bmfontSize] ?? '12') ?? 12,
       fontWeight: (widget.bottomMenuItems.first[bmisBold] == 'true') ? FontWeight.bold : FontWeight.normal,
       fontStyle: (widget.bottomMenuItems.first[bmisItalic] == 'true') ? FontStyle.italic : FontStyle.normal,
-      fontFamily: widget.bottomMenuItems.first[bmfont] ?? 'OpenSans',
       color: isActive ? _parseHexColor(widget.activeTabColor) : _parseHexColor(widget.textColor),
     );
   }
+  Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
+    final icon = Icon(
+      _getIconByName(item['icon']),
+      color: isActive ? _parseHexColor(widget.activeTabColor) : _parseHexColor(widget.iconColor),
+    );
+    final label = Text(item['label'], style: _getMenuTextStyle(isActive));
+
+    switch (widget.iconPosition) {
+      case 'above':
+        return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
+      case 'beside':
+        return Row(mainAxisSize: MainAxisSize.min, children: [icon, SizedBox(width: 4), label]);
+      case 'only_text':
+        return label;
+      case 'only_icon':
+        return icon;
+      default:
+        return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
+    }
+  }
+
 
   // Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
   //   final icon = Icon(_getIconByName(item['icon']), color: isActive ? _parseHexColor(widget.activeTabColor): _parseHexColor(widget.iconColor));
   //   final label = Text(item['label'], style: _getMenuTextStyle(isActive));
-  //
-  //
   //   switch (widget.iconPosition) {
   //     case 'above':
   //       return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
@@ -375,6 +373,43 @@ class _MainHomeState extends State<MainHome> {
   //       return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
   //   }
   // }
+
+  //   Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
+  //   return FutureBuilder(
+  //     future: Future.delayed(Duration.zero), // Ensures async build
+  //     builder: (context, snapshot) {
+  //       final icon = Icon(
+  //         _getIconByName(item['icon']),
+  //         color: isActive ? _parseHexColor(widget.activeTabColor) : _parseHexColor(widget.iconColor),
+  //       );
+  //       final label = Text(item['label'], style: _getMenuTextStyle(isActive));
+  //
+  //       switch (widget.iconPosition) {
+  //         case 'above':
+  //           return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
+  //         case 'beside':
+  //           return Row(mainAxisSize: MainAxisSize.min, children: [icon, SizedBox(width: 4), label]);
+  //         case 'only_text':
+  //           return label;
+  //         case 'only_icon':
+  //           return icon;
+  //         default:
+  //           return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
+  //       }
+  //     },
+  //   );
+  // }
+
+  // TextStyle _getMenuTextStyle(bool isActive) {
+  //   return TextStyle(
+  //     fontSize: double.tryParse(widget.bottomMenuItems.first[bmfontSize] ?? '10') ?? 10,
+  //     fontWeight: (widget.bottomMenuItems.first[bmisBold] == 'true') ? FontWeight.bold : FontWeight.normal,
+  //     fontStyle: (widget.bottomMenuItems.first[bmisItalic] == 'true') ? FontStyle.italic : FontStyle.normal,
+  //     fontFamily: widget.bottomMenuItems.first[bmfont] ?? 'OpenSans',
+  //     color: isActive ? _parseHexColor(widget.activeTabColor) : _parseHexColor(widget.textColor),
+  //   );
+  // }
+
 
 
   IconData _getIconByName(String? name) {
@@ -427,6 +462,24 @@ class _MainHomeState extends State<MainHome> {
     }
     return icon ?? Icons.error_outline;
   }
+// Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
+  //   final icon = Icon(_getIconByName(item['icon']), color: isActive ? _parseHexColor(widget.activeTabColor): _parseHexColor(widget.iconColor));
+  //   final label = Text(item['label'], style: _getMenuTextStyle(isActive));
+  //
+  //
+  //   switch (widget.iconPosition) {
+  //     case 'above':
+  //       return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
+  //     case 'beside':
+  //       return Row(mainAxisSize: MainAxisSize.min, children: [icon, SizedBox(width: 4), label]);
+  //     case 'only_text':
+  //       return label;
+  //     case 'only_icon':
+  //       return icon;
+  //     default:
+  //       return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
