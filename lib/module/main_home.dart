@@ -321,6 +321,32 @@ class _MainHomeState extends State<MainHome> {
   bool isLoading = true;
   bool hasError = false;
 
+  Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
+    return FutureBuilder(
+      future: Future.delayed(Duration.zero), // Ensures async build
+      builder: (context, snapshot) {
+        final icon = Icon(
+          _getIconByName(item['icon']),
+          color: isActive ? _parseHexColor(widget.activeTabColor) : _parseHexColor(widget.iconColor),
+        );
+        final label = Text(item['label'], style: _getMenuTextStyle(isActive));
+
+        switch (widget.iconPosition) {
+          case 'above':
+            return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
+          case 'beside':
+            return Row(mainAxisSize: MainAxisSize.min, children: [icon, SizedBox(width: 4), label]);
+          case 'only_text':
+            return label;
+          case 'only_icon':
+            return icon;
+          default:
+            return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
+        }
+      },
+    );
+  }
+
   TextStyle _getMenuTextStyle(bool isActive) {
     return TextStyle(
       fontSize: double.tryParse(widget.bottomMenuItems.first[bmfontSize] ?? '12') ?? 12,
@@ -331,24 +357,24 @@ class _MainHomeState extends State<MainHome> {
     );
   }
 
-  Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
-    final icon = Icon(_getIconByName(item['icon']), color: isActive ? _parseHexColor(widget.activeTabColor): _parseHexColor(widget.iconColor));
-    final label = Text(item['label'], style: _getMenuTextStyle(isActive));
-
-
-    switch (widget.iconPosition) {
-      case 'above':
-        return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
-      case 'beside':
-        return Row(mainAxisSize: MainAxisSize.min, children: [icon, SizedBox(width: 4), label]);
-      case 'only_text':
-        return label;
-      case 'only_icon':
-        return icon;
-      default:
-        return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
-    }
-  }
+  // Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
+  //   final icon = Icon(_getIconByName(item['icon']), color: isActive ? _parseHexColor(widget.activeTabColor): _parseHexColor(widget.iconColor));
+  //   final label = Text(item['label'], style: _getMenuTextStyle(isActive));
+  //
+  //
+  //   switch (widget.iconPosition) {
+  //     case 'above':
+  //       return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
+  //     case 'beside':
+  //       return Row(mainAxisSize: MainAxisSize.min, children: [icon, SizedBox(width: 4), label]);
+  //     case 'only_text':
+  //       return label;
+  //     case 'only_icon':
+  //       return icon;
+  //     default:
+  //       return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
+  //   }
+  // }
 
 
   IconData _getIconByName(String? name) {
@@ -356,7 +382,7 @@ class _MainHomeState extends State<MainHome> {
       return Icons.apps; // Default icon
     }
 
-    final lowerName = name.toLowerCase().trim().replaceAll('_', '');
+    final lowerName = name.toLowerCase().trim();
 
     final iconMap = {
       'home': Icons.home,
@@ -392,11 +418,13 @@ class _MainHomeState extends State<MainHome> {
       'menu': Icons.more_horiz,
     };
 
-    final result = iconMap[lowerName];
-    if (result == null) {
-      print("🚫 Icon not found for name: $name");
+    final icon = iconMap[lowerName];
+    if (icon == null) {
+      if (kDebugMode) {
+        print("🚫 Icon not found for name: $name");
+      }
     }
-    return result ?? Icons.apps;
+    return icon ?? Icons.error_outline;
   }
 
   @override
