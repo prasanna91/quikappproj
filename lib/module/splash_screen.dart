@@ -59,7 +59,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   Widget _buildAnimatedLogo() {
-    final image = Image.asset('assets/images/splash.png', width: 150, fit: BoxFit.fitWidth);
+    final image = Image.asset('assets/images/splash.png', height: 200, fit: BoxFit.fitHeight);
 
     switch (widget.splashAnimation.toLowerCase()) {
         case 'fade':

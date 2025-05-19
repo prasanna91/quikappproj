@@ -483,160 +483,157 @@ class _MainHomeState extends State<MainHome> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: WillPopScope(
-        onWillPop: _onBackPressed,
-        child: Scaffold(
-          body: SafeArea(
-            child: Builder(
-              builder: (context) {
-                if (hasInternet == null) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+    return WillPopScope(
+      onWillPop: _onBackPressed,
+      child: Scaffold(
+        body: SafeArea(
+          child: Builder(
+            builder: (context) {
+              if (hasInternet == null) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                if (hasInternet == false) {
-                  return const Center(child: Text('📴 No Internet Connection'));
-                }
+              if (hasInternet == false) {
+                return const Center(child: Text('📴 No Internet Connection'));
+              }
 
-                return Stack(
-                  children: [
-                    if (!hasError)
-                      InAppWebView(
-                        key: webViewKey,
-                        webViewEnvironment: webViewEnvironment,
-                        initialUrlRequest: URLRequest(url: WebUri(widget.webUrl.isNotEmpty ? widget.webUrl : "https://pixaware.co"),),
-                        pullToRefreshController: pullToRefreshController,
-                        onWebViewCreated: (controller) {
-                          webViewController = controller;
-                          if (_pendingInitialUrl != null) {
-                            controller.loadUrl(
-                              urlRequest: URLRequest(url: WebUri(_pendingInitialUrl!)),
-                            );
-                            _pendingInitialUrl = null;
-                          }
-                        },
-                        shouldOverrideUrlLoading: (controller, navigationAction) async {
-                          final uri = navigationAction.request.url;
-                          // if (uri != null && !uri.toString().contains(widget.webUrl)) {
-                            if (uri != null && !uri.host.contains(myDomain)) {
+              return Stack(
+                children: [
+                  if (!hasError)
+                    InAppWebView(
+                      key: webViewKey,
+                      webViewEnvironment: webViewEnvironment,
+                      initialUrlRequest: URLRequest(url: WebUri(widget.webUrl.isNotEmpty ? widget.webUrl : "https://pixaware.co"),),
+                      pullToRefreshController: pullToRefreshController,
+                      onWebViewCreated: (controller) {
+                        webViewController = controller;
+                        if (_pendingInitialUrl != null) {
+                          controller.loadUrl(
+                            urlRequest: URLRequest(url: WebUri(_pendingInitialUrl!)),
+                          );
+                          _pendingInitialUrl = null;
+                        }
+                      },
+                      shouldOverrideUrlLoading: (controller, navigationAction) async {
+                        final uri = navigationAction.request.url;
+                        // if (uri != null && !uri.toString().contains(widget.webUrl)) {
+                        if (uri != null && !uri.host.contains(myDomain)) {
 
-                            if (widget.isDeeplink) {
-                              if (await canLaunchUrl(uri)) {
-                                await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                return NavigationActionPolicy.CANCEL;
-                              }
-                            } else {
-                              // block all external URL loading if deeplink is disabled
-                              Fluttertoast.showToast(
-                                msg: "External links are disabled",
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.BOTTOM,
-                              );
+                          if (widget.isDeeplink) {
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
                               return NavigationActionPolicy.CANCEL;
                             }
+                          } else {
+                            // block all external URL loading if deeplink is disabled
+                            Fluttertoast.showToast(
+                              msg: "External links are disabled",
+                              toastLength: Toast.LENGTH_SHORT,
+                              gravity: ToastGravity.BOTTOM,
+                            );
+                            return NavigationActionPolicy.CANCEL;
                           }
-                          return NavigationActionPolicy.ALLOW;
-                        },
-                        onLoadStart: (controller, url) {
-                          setState(() {
-                            isLoading = true;
-                            hasError = false;
-                          });
-                        },
-                        onLoadStop: (controller, url) async {
-                          setState(() => isLoading = false);
-                        },
-                        onLoadError: (controller, url, code, message) {
-                          debugPrint('Load error [$code]: $message');
-                          setState(() {
-                            hasError = true;
-                            isLoading = false;
-                          });
-                        },
-                        onLoadHttpError: (controller, url, statusCode, description) {
-                          debugPrint('HTTP error [$statusCode]: $description');
-                          setState(() {
-                            hasError = true;
-                            isLoading = false;
-                          });
-                        },
-                        onConsoleMessage: (controller, consoleMessage) {
-                          debugPrint('Console: ${consoleMessage.message}');
-                        },
-                      ),
+                        }
+                        return NavigationActionPolicy.ALLOW;
+                      },
+                      onLoadStart: (controller, url) {
+                        setState(() {
+                          isLoading = true;
+                          hasError = false;
+                        });
+                      },
+                      onLoadStop: (controller, url) async {
+                        setState(() => isLoading = false);
+                      },
+                      onLoadError: (controller, url, code, message) {
+                        debugPrint('Load error [$code]: $message');
+                        setState(() {
+                          hasError = true;
+                          isLoading = false;
+                        });
+                      },
+                      onLoadHttpError: (controller, url, statusCode, description) {
+                        debugPrint('HTTP error [$statusCode]: $description');
+                        setState(() {
+                          hasError = true;
+                          isLoading = false;
+                        });
+                      },
+                      onConsoleMessage: (controller, consoleMessage) {
+                        debugPrint('Console: ${consoleMessage.message}');
+                      },
+                    ),
 
-                    // Loading Indicator
-                    if (widget.isLoadIndicator && isLoading)
-                      const Center(child: CircularProgressIndicator()),
+                  // Loading Indicator
+                  if (widget.isLoadIndicator && isLoading)
+                    const Center(child: CircularProgressIndicator()),
 
-                    // Error Screen
-                    if (hasError)
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                            const SizedBox(height: 16),
-                            const Text(
-                              "Oops! Couldn't load the App.",
-                              style: TextStyle(fontSize: 18),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  hasError = false;
-                                  isLoading = true;
-                                });
-                                webViewController?.loadUrl(
-                                  urlRequest: URLRequest(url: WebUri(widget.webUrl)),
-                                );
-                              },
-                              child: const Text("Retry"),
-                            ),
-                          ],
-                        ),
+                  // Error Screen
+                  if (hasError)
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                          const SizedBox(height: 16),
+                          const Text(
+                            "Oops! Couldn't load the App.",
+                            style: TextStyle(fontSize: 18),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                hasError = false;
+                                isLoading = true;
+                              });
+                              webViewController?.loadUrl(
+                                urlRequest: URLRequest(url: WebUri(widget.webUrl)),
+                              );
+                            },
+                            child: const Text("Retry"),
+                          ),
+                        ],
                       ),
-                  ],
-                );
-              },
-            ),
+                    ),
+                ],
+              );
+            },
           ),
-          bottomNavigationBar: isBottomMenu
-              ? BottomAppBar(
-            color: _parseHexColor(widget.backgroundColor),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(bottomMenuItems.length, (index) {
-                final item = bottomMenuItems[index];
-                final isActive = _currentIndex == index;
-
-
-                return GestureDetector(
-                  onTap: () {
-    setState(() {
-          _currentIndex = index;
-          webViewController?.loadUrl(
-            urlRequest: URLRequest(
-              url: WebUri(item['url']),
-            ),
-          );
-        });
-
-                  },
-                  child: _buildMenuItem(item, isActive),
-                );
-
-              }),
-            ),
-          )
-              : null,
-
-
         ),
+        bottomNavigationBar: isBottomMenu
+            ? BottomAppBar(
+          color: _parseHexColor(widget.backgroundColor),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(bottomMenuItems.length, (index) {
+              final item = bottomMenuItems[index];
+              final isActive = _currentIndex == index;
+
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _currentIndex = index;
+                    webViewController?.loadUrl(
+                      urlRequest: URLRequest(
+                        url: WebUri(item['url']),
+                      ),
+                    );
+                  });
+
+                },
+                child: _buildMenuItem(item, isActive),
+              );
+
+            }),
+          ),
+        )
+            : null,
+
 
       ),
+
     );
 
   }
