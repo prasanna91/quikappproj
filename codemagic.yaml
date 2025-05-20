@@ -1786,8 +1786,18 @@ workflows:
       - *Update_SDK_Version
       - name: 🔐 Download code signing files
         script: |
-            wget $CERTIFICATE_URL -O certificate.p12
-            wget $PROVISIONING_PROFILE_URL -O profile.mobileprovision
+  
+            echo "📥 Downloading signing assets..."
+            
+            if [ -z "$CERT_URL" ]; then
+            echo "❌ CERT_URL is not set"; exit 1
+            fi
+            if [ -z "$PROFILE_URL" ]; then
+            echo "❌ PROVISIONING_PROFILE_URL is not set"; exit 1
+            fi
+            
+            wget $CERT_URL -O certificate.p12
+            wget $PROFILE_URL -O profile.mobileprovision
 
       - name: 🔐 Set up code signing
         script: |
@@ -1798,7 +1808,7 @@ workflows:
                 security set-keychain-settings -t 3600 -l ios-build.keychain
                 
                 echo "Importing certificate..."
-                security import certificate.p12 -k ios-build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+                security import certificate.p12 -k ios-build.keychain -P "$CERT_PASSWORD" -T /usr/bin/codesign
                 security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "temp123" ios-build.keychain
                 
                 echo "Installing provisioning profile..."
