@@ -1804,36 +1804,41 @@ workflows:
             echo "📥 Downloading signing files..."
             wget "$CERT_URL" -O certificate.p12 || { echo "❌ Failed to download certificate"; exit 1; }
             wget "$PROFILE_URL" -O profile.mobileprovision || { echo "❌ Failed to download profile"; exit 1; }
-            
+        
             echo "🔐 Creating keychain..."
             security create-keychain -p "temp123" ios-build.keychain
             security default-keychain -s ios-build.keychain
             security unlock-keychain -p "temp123" ios-build.keychain
             security set-keychain-settings -t 3600 -l ios-build.keychain
-            
+        
             echo "🔐 Importing certificate..."
             security import certificate.p12 -k ios-build.keychain -P "$CERT_PASSWORD" -T /usr/bin/codesign
             security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "temp123" ios-build.keychain
-            
+        
             echo "📱 Installing provisioning profile..."
             mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-            
+        
             PROFILE_PLIST=$(mktemp)
             security cms -D -i profile.mobileprovision > "$PROFILE_PLIST"
-            
-            PROFILE_UUID=$(PlistBuddy -c "Print UUID" "$PROFILE_PLIST")
-            PROFILE_NAME=$(PlistBuddy -c "Print Name" "$PROFILE_PLIST" | tr -d '\n' | xargs)
-            BUNDLE_ID=$(PlistBuddy -c "Print :Entitlements:application-identifier" "$PROFILE_PLIST" | cut -d '.' -f2-)
-            APPLE_TEAM_ID=$(PlistBuddy -c "Print :Entitlements:com.apple.developer.team-identifier" "$PROFILE_PLIST")
-            
+        
+            if [[ ! -f "$PROFILE_PLIST" ]]; then
+            echo "❌ Failed to parse provisioning profile"
+            exit 1
+            fi
+        
+            PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" "$PROFILE_PLIST")
+            PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" "$PROFILE_PLIST" | tr -d '\n' | xargs)
+            BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" "$PROFILE_PLIST" | cut -d '.' -f2-)
+            APPLE_TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.developer.team-identifier" "$PROFILE_PLIST")
+        
             cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
-            
+        
             echo "✅ Extracted:"
             echo "  - UUID: $PROFILE_UUID"
             echo "  - PROFILE_NAME: $PROFILE_NAME"
             echo "  - BUNDLE_ID: $BUNDLE_ID"
             echo "  - TEAM_ID: $APPLE_TEAM_ID"
-            
+        
             echo "💾 Generating exportOptions.plist..."
             cat <<EOF > ios/exportOptions.plist
             <?xml version="1.0" encoding="UTF-8"?>
@@ -1855,7 +1860,7 @@ workflows:
             </plist>
             EOF
             
-            # Export as env vars for next step
+            # Export for next step
             echo "export PROFILE_NAME=\"$PROFILE_NAME\"" >> $CM_ENV
             echo "export BUNDLE_ID=\"$BUNDLE_ID\"" >> $CM_ENV
             echo "export APPLE_TEAM_ID=\"$APPLE_TEAM_ID\"" >> $CM_ENV
@@ -1879,6 +1884,7 @@ workflows:
             -archivePath build/Runner.xcarchive \
             -exportOptionsPlist ios/exportOptions.plist \
             -exportPath build/ipa || exit 1
+    
 
     artifacts:
       - build/ipa/*.ipa
