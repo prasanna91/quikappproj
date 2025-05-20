@@ -1867,6 +1867,9 @@ workflows:
 
       - name: 📦 Build and export IPA
         script: |
+          # Load exported environment variables
+          source $CM_ENV
+
           echo "🏗️ Archiving app..."
           xcodebuild -workspace ios/Runner.xcworkspace \
             -scheme Runner \
@@ -1884,6 +1887,7 @@ workflows:
             -archivePath build/Runner.xcarchive \
             -exportOptionsPlist ios/exportOptions.plist \
             -exportPath build/ipa || exit 1
+    
     
     
 
