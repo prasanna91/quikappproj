@@ -1584,14 +1584,29 @@ definitions:
           echo "🔗 Firebase Config URL: $firebase_config_ios"
 
           if [[ "$firebase_config_ios" =~ ^https:// ]]; then
-            echo "⬇️ Downloading GoogleService-Info.plist..."
-            wget -O ios/Runner/GoogleService-Info.plist "$firebase_config_ios"
-            if [ $? -eq 0 ]; then
-              echo "✅ GoogleService-Info.plist placed in ios/Runner"
-            else
-              echo "❌ Failed to download GoogleService-Info.plist"
-              exit 1
-            fi
+        
+          echo "⬇️ Downloading GoogleService-Info.plist with retry..."
+  
+          for i in {1..5}; do
+          wget -O ios/Runner/GoogleService-Info.plist "$firebase_config_ios" && break
+          echo "❌ Download failed, retrying in $((2 ** i))s..."
+          sleep $((2 ** i))
+          done
+          
+          if [ ! -f ios/Runner/GoogleService-Info.plist ]; then
+          echo "❌ Failed to download GoogleService-Info.plist after retries"
+          exit 1
+          fi
+        
+        
+        #            echo "⬇️ Downloading GoogleService-Info.plist..."
+        #            wget -O ios/Runner/GoogleService-Info.plist "$firebase_config_ios"
+        #            if [ $? -eq 0 ]; then
+        #              echo "✅ GoogleService-Info.plist placed in ios/Runner"
+        #            else
+        #              echo "❌ Failed to download GoogleService-Info.plist"
+        #              exit 1
+        #            fi
           else
             echo "❌ Error: Invalid URL format for firebase_config_ios"
             exit 1
