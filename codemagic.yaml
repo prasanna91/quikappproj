@@ -1784,50 +1784,109 @@ workflows:
       - *get_splash
       #      - *Get_Font
       - *Update_SDK_Version
-      - name: Set up code signing
+      - name: 🔐 Download code signing files
         script: |
-          echo "🔐 Setting up iOS code signing..."
+            wget $CERTIFICATE_URL -O certificate.p12
+            wget $PROVISIONING_PROFILE_URL -O profile.mobileprovision
 
-          # Create keychain
-          KEYCHAIN_NAME="ios-build.keychain"
-          KEYCHAIN_PASSWORD="temporary"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-          security default-keychain -s "$KEYCHAIN_NAME"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-          security set-keychain-settings -t 3600 -l "$KEYCHAIN_NAME"
-
-          # Import certificate
-          echo "📥 Importing certificate..."
-          security import certificate.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-
-          # Set up provisioning profile
-          echo "📱 Setting up provisioning profile..."
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
-
-          # Get profile UUID
-          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
-          echo "✅ Profile UUID: $PROFILE_UUID"
-
-          # Move profile to correct location
-          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
-
-      - name: iOS build
+      - name: 🔐 Set up code signing
         script: |
-          echo "🏗️ Building iOS app..."
-          cd ios
-          pod install
-          cd ..
+                echo "Creating custom keychain..."
+                security create-keychain -p "temp123" ios-build.keychain
+                security default-keychain -s ios-build.keychain
+                security unlock-keychain -p "temp123" ios-build.keychain
+                security set-keychain-settings -t 3600 -l ios-build.keychain
+                
+                echo "Importing certificate..."
+                security import certificate.p12 -k ios-build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+                security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "temp123" ios-build.keychain
+                
+                echo "Installing provisioning profile..."
+                mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+                PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
+                cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
+                echo "✅ Provisioning profile installed: $PROFILE_UUID"
+          
+                echo "📝 Creating ExportOptions.plist..."
+                cat > ExportOptions.plist <<EOF
+                <?xml version="1.0" encoding="UTF-8"?>
+                <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+                <plist version="1.0">
+                <dict>
+                <key>method</key>
+                <string>ad-hoc</string>
+                <key>signingStyle</key>
+                <string>manual</string>
+                <key>provisioningProfiles</key>
+                <dict>
+                <key>$PKG_NAME</key>
+                <string>$PROFILE_NAME</string>
+                </dict>
+                <key>teamID</key>
+                <string>$APPLE_TEAM_ID</string>
+                </dict>
+                </plist>
+                EOF
+                
+                echo "✅ ExportOptions.plist created."
 
-          # Build IPA
-          flutter build ipa \
-            --release \
-            --export-options-plist=ios/ExportOptions.plist
-            
-          # Clean up
-          security delete-keychain "$KEYCHAIN_NAME"
-          rm -f certificate.p12 profile.mobileprovision
+      - name: 📦 Build .ipa with Xcode
+        script: |
+                xcodebuild -workspace ios/Runner.xcworkspace \
+                  -scheme Runner \
+                  -configuration Release \
+                  -archivePath build/Runner.xcarchive \
+                  clean archive
+                
+                xcodebuild -exportArchive \
+                  -archivePath build/Runner.xcarchive \
+                  -exportOptionsPlist ios/exportOptions.plist \
+                  -exportPath build/ipa
+
+    #      - name: Set up code signing
+#        script: |
+#          echo "🔐 Setting up iOS code signing..."
+#
+#          # Create keychain
+#          KEYCHAIN_NAME="ios-build.keychain"
+#          KEYCHAIN_PASSWORD="temporary"
+#          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+#          security default-keychain -s "$KEYCHAIN_NAME"
+#          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+#          security set-keychain-settings -t 3600 -l "$KEYCHAIN_NAME"
+#
+#          # Import certificate
+#          echo "📥 Importing certificate..."
+#          security import certificate.p12 -k "$KEYCHAIN_NAME" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+#          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+#
+#          # Set up provisioning profile
+#          echo "📱 Setting up provisioning profile..."
+#          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+#          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+#
+#          # Get profile UUID
+#          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
+#          echo "✅ Profile UUID: $PROFILE_UUID"
+#
+#          # Move profile to correct location
+#          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
+#
+#      - name: iOS build
+#        script: |
+#          echo "🏗️ Building iOS app..."
+#          cd ios
+#          pod install
+#          cd ..
+#
+#          # Build IPA
+#          flutter build ipa \
+#            --release \
+#            --export-options-plist=ios/ExportOptions.plist
+#
+#          # Clean up
+#          security delete-keychain "$KEYCHAIN_NAME"
+#          rm -f certificate.p12 profile.mobileprovision
 
     artifacts:
       - build/ios/ipa/*.ipa
