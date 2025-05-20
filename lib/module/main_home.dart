@@ -10,15 +10,14 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:quickappproj/config/env_config.dart';
+import 'package:quickappproj/services/notification_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 
-import '../config/env_config.dart';
-
-import '../services/notification_service.dart';
 
 class MainHome extends StatefulWidget {
   final String webUrl;
@@ -40,10 +39,10 @@ class MainHome extends StatefulWidget {
 
 class _MainHomeState extends State<MainHome> {
   final GlobalKey webViewKey = GlobalKey();
-  final String bmfont =  String.fromEnvironment('BOTTOMMENU_FONT', defaultValue: 'OpenSans');
-  final double bmfontSize = double.tryParse( String.fromEnvironment('BOTTOMMENU_FONT_SIZE', defaultValue: "10.5")) ?? 12;
+  final String bmfont =  String.fromEnvironment('BOTTOMMENU_FONT', defaultValue: 'Public Sans');
+  final double bmfontSize = double.tryParse( String.fromEnvironment('BOTTOMMENU_FONT_SIZE', defaultValue: "14")) ?? 12;
   final bool bmisBold =  bool.fromEnvironment('BOTTOMMENU_FONT_BOLD', defaultValue: false);
-  final bool bmisItalic =  bool.fromEnvironment('BOTTOMMENU_FONT_ITALIC', defaultValue: false);
+  final bool bmisItalic =  bool.fromEnvironment('BOTTOMMENU_FONT_ITALIC', defaultValue: true);
   late bool isBottomMenu;
 
   // final Color taglineColor = _parseHexColor(const String.fromEnvironment('SPLASH_TAGLINE_COLOR', defaultValue: "#000000"));
@@ -321,20 +320,30 @@ class _MainHomeState extends State<MainHome> {
 
   bool isLoading = true;
   bool hasError = false;
-
   TextStyle _getMenuTextStyle(bool isActive) {
-    // Get the font family from your config or default to 'Open Sans'
-    final String fontFamily = widget.bottomMenuItems.first[bmfont] ?? 'Open Sans';
-
-    // Use GoogleFonts.getFont for dynamic font family
     return GoogleFonts.getFont(
-      fontFamily,
-      fontSize: double.tryParse(widget.bottomMenuItems.first[bmfontSize] ?? '12') ?? 12,
-      fontWeight: (widget.bottomMenuItems.first[bmisBold] == 'true') ? FontWeight.bold : FontWeight.normal,
-      fontStyle: (widget.bottomMenuItems.first[bmisItalic] == 'true') ? FontStyle.italic : FontStyle.normal,
-      color: isActive ? _parseHexColor(widget.activeTabColor) : _parseHexColor(widget.textColor),
+      bmfont,
+      fontSize: bmfontSize,
+      fontWeight: bmisBold ? FontWeight.bold : FontWeight.normal,
+      fontStyle: bmisItalic ? FontStyle.italic : FontStyle.normal,
+      color: isActive
+          ? _parseHexColor(widget.activeTabColor)
+          : _parseHexColor(widget.textColor),
     );
   }
+  // TextStyle _getMenuTextStyle(bool isActive) {
+  //   // Get the font family from your config or default to 'Open Sans'
+  //   final String fontFamily = widget.bottomMenuItems.first[bmfont] ?? 'Open Sans';
+  //
+  //   // Use GoogleFonts.getFont for dynamic font family
+  //   return GoogleFonts.getFont(
+  //     fontFamily,
+  //     fontSize: double.tryParse(widget.bottomMenuItems.first[bmfontSize] ?? '12') ?? 12,
+  //     fontWeight: (widget.bottomMenuItems.first[bmisBold] == 'true') ? FontWeight.bold : FontWeight.normal,
+  //     fontStyle: (widget.bottomMenuItems.first[bmisItalic] == 'true') ? FontStyle.italic : FontStyle.normal,
+  //     color: isActive ? _parseHexColor(widget.activeTabColor) : _parseHexColor(widget.textColor),
+  //   );
+  // }
   Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
     final icon = Icon(
       _getIconByName(item['icon']),
@@ -356,59 +365,6 @@ class _MainHomeState extends State<MainHome> {
     }
   }
 
-
-  // Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
-  //   final icon = Icon(_getIconByName(item['icon']), color: isActive ? _parseHexColor(widget.activeTabColor): _parseHexColor(widget.iconColor));
-  //   final label = Text(item['label'], style: _getMenuTextStyle(isActive));
-  //   switch (widget.iconPosition) {
-  //     case 'above':
-  //       return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
-  //     case 'beside':
-  //       return Row(mainAxisSize: MainAxisSize.min, children: [icon, SizedBox(width: 4), label]);
-  //     case 'only_text':
-  //       return label;
-  //     case 'only_icon':
-  //       return icon;
-  //     default:
-  //       return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
-  //   }
-  // }
-
-  //   Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
-  //   return FutureBuilder(
-  //     future: Future.delayed(Duration.zero), // Ensures async build
-  //     builder: (context, snapshot) {
-  //       final icon = Icon(
-  //         _getIconByName(item['icon']),
-  //         color: isActive ? _parseHexColor(widget.activeTabColor) : _parseHexColor(widget.iconColor),
-  //       );
-  //       final label = Text(item['label'], style: _getMenuTextStyle(isActive));
-  //
-  //       switch (widget.iconPosition) {
-  //         case 'above':
-  //           return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
-  //         case 'beside':
-  //           return Row(mainAxisSize: MainAxisSize.min, children: [icon, SizedBox(width: 4), label]);
-  //         case 'only_text':
-  //           return label;
-  //         case 'only_icon':
-  //           return icon;
-  //         default:
-  //           return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
-  //       }
-  //     },
-  //   );
-  // }
-
-  // TextStyle _getMenuTextStyle(bool isActive) {
-  //   return TextStyle(
-  //     fontSize: double.tryParse(widget.bottomMenuItems.first[bmfontSize] ?? '10') ?? 10,
-  //     fontWeight: (widget.bottomMenuItems.first[bmisBold] == 'true') ? FontWeight.bold : FontWeight.normal,
-  //     fontStyle: (widget.bottomMenuItems.first[bmisItalic] == 'true') ? FontStyle.italic : FontStyle.normal,
-  //     fontFamily: widget.bottomMenuItems.first[bmfont] ?? 'OpenSans',
-  //     color: isActive ? _parseHexColor(widget.activeTabColor) : _parseHexColor(widget.textColor),
-  //   );
-  // }
 
 
 
@@ -462,24 +418,7 @@ class _MainHomeState extends State<MainHome> {
     }
     return icon ?? Icons.error_outline;
   }
-// Widget _buildMenuItem(Map<String, dynamic> item, bool isActive) {
-  //   final icon = Icon(_getIconByName(item['icon']), color: isActive ? _parseHexColor(widget.activeTabColor): _parseHexColor(widget.iconColor));
-  //   final label = Text(item['label'], style: _getMenuTextStyle(isActive));
-  //
-  //
-  //   switch (widget.iconPosition) {
-  //     case 'above':
-  //       return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
-  //     case 'beside':
-  //       return Row(mainAxisSize: MainAxisSize.min, children: [icon, SizedBox(width: 4), label]);
-  //     case 'only_text':
-  //       return label;
-  //     case 'only_icon':
-  //       return icon;
-  //     default:
-  //       return Column(mainAxisSize: MainAxisSize.min, children: [icon, label]);
-  //   }
-  // }
+
 
   @override
   Widget build(BuildContext context) {
@@ -516,16 +455,21 @@ class _MainHomeState extends State<MainHome> {
                       },
                       shouldOverrideUrlLoading: (controller, navigationAction) async {
                         final uri = navigationAction.request.url;
-                        // if (uri != null && !uri.toString().contains(widget.webUrl)) {
-                        if (uri != null && !uri.host.contains(myDomain)) {
 
+                        // 🔒 Block Google reCAPTCHA URLs
+                        if (uri != null && uri.toString().contains("google.com/recaptcha")) {
+                          debugPrint("Blocked reCAPTCHA URL: ${uri.toString()}");
+                          return NavigationActionPolicy.CANCEL;
+                        }
+
+                        // ✅ Allow internal URLs, or handle deeplinks
+                        if (uri != null && !uri.host.contains(myDomain)) {
                           if (widget.isDeeplink) {
                             if (await canLaunchUrl(uri)) {
                               await launchUrl(uri, mode: LaunchMode.externalApplication);
                               return NavigationActionPolicy.CANCEL;
                             }
                           } else {
-                            // block all external URL loading if deeplink is disabled
                             Fluttertoast.showToast(
                               msg: "External links are disabled",
                               toastLength: Toast.LENGTH_SHORT,
@@ -534,7 +478,9 @@ class _MainHomeState extends State<MainHome> {
                             return NavigationActionPolicy.CANCEL;
                           }
                         }
+
                         return NavigationActionPolicy.ALLOW;
+
                       },
                       onLoadStart: (controller, url) {
                         setState(() {
@@ -638,44 +584,3 @@ class _MainHomeState extends State<MainHome> {
 
   }
 }
-// final icon = Icon(
-//   _getIconByName(item['icon']),
-//   color: isActive
-//       ? _parseHexColor(widget.activeTabColor)
-//       : _parseHexColor(widget.iconColor),
-// );
-//
-// final label = Text(
-//   item['label'],
-//   style: TextStyle(
-//     fontSize: 12,
-//     color: isActive
-//         ? _parseHexColor(widget.activeTabColor)
-//         : _parseHexColor(widget.textColor),
-//   ),
-// );
-//
-// return GestureDetector(
-//   onTap: () {
-//     setState(() {
-//       _currentIndex = index;
-//       webViewController?.loadUrl(
-//         urlRequest: URLRequest(
-//           url: WebUri(item['url']),
-//         ),
-//       );
-//     });
-//   },
-//   child: Padding(
-//     padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-//     child: widget.iconPosition == 'beside'
-//         ? Row(
-//       mainAxisSize: MainAxisSize.min,
-//       children: [icon, const SizedBox(width: 6), label],
-//     )
-//         : Column(
-//       mainAxisSize: MainAxisSize.min,
-//       children: [icon, const SizedBox(height: 4), label],
-//     ),
-//   ),
-// );
