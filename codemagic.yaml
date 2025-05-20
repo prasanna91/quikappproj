@@ -1855,20 +1855,23 @@ workflows:
       - name: 📦 Build and export IPA
         script: |
           echo "🏗️ Archiving app..."
-          xcodebuild -workspace ios/Runner.xcworkspace \
+          
+              xcodebuild -workspace ios/Runner.xcworkspace \
               -scheme Runner \
               -configuration Release \
               -archivePath build/Runner.xcarchive \
               -destination 'generic/platform=iOS' \
               CODE_SIGN_STYLE=Manual \
               DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
+              PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+              PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
               clean archive || exit 1
-          
-          echo "📤 Exporting IPA..."
-          xcodebuild -exportArchive \
-            -archivePath build/Runner.xcarchive \
-            -exportOptionsPlist ios/exportOptions.plist \
-            -exportPath build/ipa || exit 1
+              
+              echo "📤 Exporting IPA..."
+              xcodebuild -exportArchive \
+              -archivePath build/Runner.xcarchive \
+              -exportOptionsPlist ios/exportOptions.plist \
+              -exportPath build/ipa || exit 1
 
     artifacts:
       - build/ipa/*.ipa
