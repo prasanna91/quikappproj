@@ -1871,7 +1871,11 @@ workflows:
 
       - name: 📦 Build and export IPA
         script: |
-
+            # 🧩 Install CocoaPods
+              echo "📦 Installing Pods..."
+              cd ios
+              pod install --repo-update || { echo "❌ pod install failed"; exit 1; }
+              cd ..
             # Load exported environment variables
               source $CM_ENV
               
