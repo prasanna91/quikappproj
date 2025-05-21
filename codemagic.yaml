@@ -606,28 +606,35 @@ definitions:
             echo "✅ Google Services plugin already present"
           fi
 
-          echo "🔧 Ensuring desugaring is enabled in compileOptions..."
+            echo "🔧 Ensuring desugaring is enabled in compileOptions..."
 
-          # Check if compileOptions block exists
-          if grep -q "compileOptions" android/app/build.gradle; then
-            # If compileOptions exists, check for desugaring line
+            # Check if compileOptions block exists
+            if grep -q "compileOptions" android/app/build.gradle; then
+            # If desugaring is not enabled yet, insert manually
             if ! grep -q "coreLibraryDesugaringEnabled true" android/app/build.gradle; then
-              # Insert the line under compileOptions block
-              sed -i.bak "/compileOptions {/,/}/ {/coreLibraryDesugaringEnabled/!s/compileOptions {/compileOptions {\n        coreLibraryDesugaringEnabled true/}" android/app/build.gradle
-              echo "✅ coreLibraryDesugaringEnabled added inside compileOptions"
+            echo "✅ Adding coreLibraryDesugaringEnabled to existing compileOptions"
+            awk '
+            /compileOptions *{/ {
+            print; in_block=1; next
+            }
+            in_block && /}/ {
+            print "        coreLibraryDesugaringEnabled true"
+            in_block=0
+            }
+            { print }
+            ' android/app/build.gradle > temp && mv temp android/app/build.gradle
+              else
+                echo "✅ Desugaring already enabled"
+              fi
             else
-              echo "✅ Desugaring already enabled"
+              echo "✅ Adding full compileOptions block with desugaring..."
+              sed -i.bak "/android {/a\
+              compileOptions {\n\
+                  sourceCompatibility JavaVersion.VERSION_11\n\
+                  targetCompatibility JavaVersion.VERSION_11\n\
+                  coreLibraryDesugaringEnabled true\n\
+              }" android/app/build.gradle
             fi
-          else
-            # No compileOptions block; inject the full block inside android
-            sed -i.bak "/android {/a\
-            compileOptions {\n\
-                sourceCompatibility JavaVersion.VERSION_11\n\
-                targetCompatibility JavaVersion.VERSION_11\n\
-                coreLibraryDesugaringEnabled true\n\
-            }" android/app/build.gradle
-            echo "✅ compileOptions block with desugaring injected"
-          fi
 
         else
           echo "🚫 Firebase config skipped (PUSH_NOTIFY is not true)"
