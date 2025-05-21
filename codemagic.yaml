@@ -1985,6 +1985,13 @@ workflows:
         - *set_launcher_icons
         - *get_splash
         - *Update_App_Version
+        - name: Upgrade AGP and Gradle
+          script: |
+            echo "🔧 Updating Android Gradle Plugin to 8.3.0..."
+            sed -i'' 's/com.android.tools.build:gradle:[0-9.]\+/com.android.tools.build:gradle:8.3.0/' android/build.gradle
+
+            echo "🔧 Updating Gradle Wrapper to 8.4..."
+            sed -i'' 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.4-bin.zip|' android/gradle/wrapper/gradle-wrapper.properties
         - *key_store
         - *build_apk_release
         - *Inject_iOS_Firebase_Push
