@@ -1818,7 +1818,7 @@ workflows:
               
               echo "🔐 Importing certificate..."
               security import certificate.p12 -k ios-build.keychain -P "$CERT_PASSWORD" -T /usr/bin/codesign
-            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "temp123" ios-build.keychain
+              security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "temp123" ios-build.keychain
               
               echo "📱 Installing provisioning profile..."
               mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
@@ -1836,12 +1836,12 @@ workflows:
               cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
               
               echo "✅ Extracted:"
-            echo "  - UUID: $PROFILE_UUID"
-            echo "  - PROFILE_NAME: $PROFILE_NAME"
-            echo "  - BUNDLE_ID: $BUNDLE_ID"
-            echo "  - TEAM_ID: $APPLE_TEAM_ID"
-            
-            # Generate exportOptions.plist
+              echo "  - UUID: $PROFILE_UUID"
+              echo "  - PROFILE_NAME: $PROFILE_NAME"
+              echo "  - BUNDLE_ID: $BUNDLE_ID"
+              echo "  - TEAM_ID: $APPLE_TEAM_ID"
+              
+              # Generate exportOptions.plist
               echo "💾 Generating exportOptions.plist..."
               cat <<EOF > ios/exportOptions.plist
               <?xml version="1.0" encoding="UTF-8"?>
