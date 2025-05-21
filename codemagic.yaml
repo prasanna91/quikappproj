@@ -570,45 +570,108 @@ definitions:
       name: Inject Google Services Plugin
       script: |
         set -e
-  
-          if [ "$PUSH_NOTIFY" = "true" ]; then
+
+        if [ "$PUSH_NOTIFY" = "true" ]; then
           echo "✅ Google Services Plugin: Start injecting..."
-        
+
           FIREBASE_CLASSPATH='classpath "com.google.gms:google-services:4.3.15"'
-        
+          CLD_CLASSPATH='coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.4"'
+
+          # ========== android/build.gradle ==========
           if ! grep -q 'com.google.gms:google-services' android/build.gradle; then
-          echo "✅ Firebase classpath not found, injecting..."
-          
-          if ! grep -q 'buildscript {' android/build.gradle; then
-          echo "🔧 No buildscript block found, injecting entire block..."
-          
-          printf 'buildscript {\n  repositories {\n    google()\n    mavenCentral()\n  }\n  dependencies {\n    %s\n  }\n}\n\n' "$FIREBASE_CLASSPATH" | cat - android/build.gradle > temp && mv temp android/build.gradle
-          
-          echo "✅ Full buildscript block injected"
+            echo "✅ Firebase classpath not found, injecting..."
+
+            if ! grep -q 'buildscript {' android/build.gradle; then
+              echo "🔧 No buildscript block found, injecting full block..."
+              printf 'buildscript {\n  repositories {\n    google()\n    mavenCentral()\n  }\n  dependencies {\n    %s\n  }\n}\n\n' "$FIREBASE_CLASSPATH" | cat - android/build.gradle > temp && mv temp android/build.gradle
+              echo "✅ Full buildscript block injected"
+            else
+              echo "🔧 buildscript block found, inserting Firebase and desugaring classpaths..."
+
+              # Insert both classpaths into dependencies block
+              sed -i.bak "/buildscript {/,/dependencies {/ s/dependencies {/dependencies {\n    $FIREBASE_CLASSPATH\n    $CLD_CLASSPATH/" android/build.gradle
+              echo "✅ Firebase and Desugaring classpaths inserted"
+            fi
           else
-          echo "🔧 buildscript block found, inserting classpath..."
-          
-          # In-place edit to insert classpath line inside dependencies block
-          sed -i '' "/buildscript {/,/dependencies {/ s/dependencies {/dependencies {\n    $FIREBASE_CLASSPATH/" android/build.gradle
-          
-          echo "✅ Firebase classpath inserted"
+            echo "✅ Firebase classpath already present, skipping"
           fi
-          else
-          echo "✅ Firebase classpath already present, skipping injection"
-          fi
-        
+
+          # ========== android/app/build.gradle ==========
           echo "🔧 Checking for Google Services plugin in android/app/build.gradle..."
-        
           if ! grep -q "com.google.gms.google-services" android/app/build.gradle; then
-          echo "🔧 Adding Google Services plugin to android/app/build.gradle"
-          echo -e "\napply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
-          echo "✅ Google Services plugin added"
+            echo "🔧 Adding Google Services plugin to android/app/build.gradle"
+            echo -e "\napply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
+            echo "✅ Google Services plugin added"
           else
-          echo "✅ Google Services plugin already present"
+            echo "✅ Google Services plugin already present"
           fi
+
+          echo "🔧 Ensuring desugaring is enabled in compileOptions..."
+
+          # Check if compileOptions block exists
+          if grep -q "compileOptions" android/app/build.gradle; then
+            # If compileOptions exists, check for desugaring line
+            if ! grep -q "coreLibraryDesugaringEnabled true" android/app/build.gradle; then
+              # Insert the line under compileOptions block
+              sed -i.bak "/compileOptions {/,/}/ {/coreLibraryDesugaringEnabled/!s/compileOptions {/compileOptions {\n        coreLibraryDesugaringEnabled true/}" android/app/build.gradle
+              echo "✅ coreLibraryDesugaringEnabled added inside compileOptions"
+            else
+              echo "✅ Desugaring already enabled"
+            fi
           else
+            # No compileOptions block; inject the full block inside android
+            sed -i.bak "/android {/a\
+            compileOptions {\n\
+                sourceCompatibility JavaVersion.VERSION_11\n\
+                targetCompatibility JavaVersion.VERSION_11\n\
+                coreLibraryDesugaringEnabled true\n\
+            }" android/app/build.gradle
+            echo "✅ compileOptions block with desugaring injected"
+          fi
+
+        else
           echo "🚫 Firebase config skipped (PUSH_NOTIFY is not true)"
-          fi
+        fi
+#        set -e
+#
+#          if [ "$PUSH_NOTIFY" = "true" ]; then
+#          echo "✅ Google Services Plugin: Start injecting..."
+#
+#          FIREBASE_CLASSPATH='classpath "com.google.gms:google-services:4.3.15"'
+#          CLD_CLASSPATH = 'coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4' // Or latest'
+#          if ! grep -q 'com.google.gms:google-services' android/build.gradle; then
+#          echo "✅ Firebase classpath not found, injecting..."
+#
+#          if ! grep -q 'buildscript {' android/build.gradle; then
+#          echo "🔧 No buildscript block found, injecting entire block..."
+#
+#          printf 'buildscript {\n  repositories {\n    google()\n    mavenCentral()\n  }\n  dependencies {\n    %s\n  }\n}\n\n' "$FIREBASE_CLASSPATH" | cat - android/build.gradle > temp && mv temp android/build.gradle
+#
+#          echo "✅ Full buildscript block injected"
+#          else
+#          echo "🔧 buildscript block found, inserting classpath..."
+#
+#          # In-place edit to insert classpath line inside dependencies block
+#          sed -i '' "/buildscript {/,/dependencies {/ s/dependencies {/dependencies {\n    $FIREBASE_CLASSPATH \n$CLD_CLASSPATH/" android/build.gradle
+#
+#          echo "✅ Firebase classpath inserted"
+#          fi
+#          else
+#          echo "✅ Firebase classpath already present, skipping injection"
+#          fi
+#
+#          echo "🔧 Checking for Google Services plugin in android/app/build.gradle..."
+#
+#          if ! grep -q "com.google.gms.google-services" android/app/build.gradle; then
+#          echo "🔧 Adding Google Services plugin to android/app/build.gradle"
+#          echo -e "\napply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
+#          echo "✅ Google Services plugin added"
+#          else
+#          echo "✅ Google Services plugin already present"
+#          fi
+#          else
+#          echo "🚫 Firebase config skipped (PUSH_NOTIFY is not true)"
+#          fi
 
 
 
